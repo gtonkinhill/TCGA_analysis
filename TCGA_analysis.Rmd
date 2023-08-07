@@ -2,7 +2,6 @@
 title: "Supervised normalisation can bias microbiome analyses"
 output:
   html_document: default
-  pdf_document: default
 date: "2023-08-03"
 editor_options:
   chunk_output_type: console
