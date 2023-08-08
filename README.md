@@ -140,13 +140,14 @@ of interest present. We add a simulated batch effect of 4 groups split
 roughly evenly over the 100 samples.
 
 ``` r
-params <- newSplatParams(nGenes=500, lib.loc=12, lib.scale=0.5)
+batches <- c(50, 50, 50, 50)
+nsamples <- sum(batches)
+params <- newSplatParams(nGenes=500, lib.loc=12, lib.scale=0.5, batchCells=batches)
 
-sim <- splatter::splatSimulate(group.prob = c(0.25, 0.25, 0.25, 0.25), method = "groups", params = params,
-                            verbose = FALSE)
+sim <- splatter::splatSimulate(params = params, verbose = FALSE)
 
 count_matrix <- counts(sim)
-colnames(count_matrix) <- paste('sample', 1:100, sep="_")
+colnames(count_matrix) <- paste('sample', 1:nsamples, sep="_")
 ```
 
 Let’s arbitrarily divide the data into two groups of interest,
@@ -156,16 +157,16 @@ to cluster, which can be verified using an MDS plot.
 
 ``` r
 groups <- tibble(
-  sample=paste('sample', 1:100, sep="_"),
-  batch = sim$Group,
-  disease_type=sample(rep(c('a','b'), 50), 100, replace = FALSE) # sample is used to randomise the allocation to groups
+  sample=paste('sample', 1:nsamples, sep="_"),
+  batch = sim$Batch,
+  disease_type=sample(rep(c('a','b'), nsamples/2), nsamples, replace = FALSE) # sample is used to randomise the allocation to groups
 )
 
 # account for read depth and transform to log space 
 y <- edgeR::cpm(count_matrix, normalized.lib.sizes = TRUE, log = TRUE, prior.count = 1) 
 
 #Plot disease type
-plotMDS(y, col=cols[factor(groups$disease_type)])
+plotMDS(y, col=cols[factor(groups$disease_type)], labels = NULL)
 legend(x = "bottomright", legend = c("false condition A","false condition B"), fill= cols, ncol=2)
 ```
 
@@ -228,12 +229,12 @@ cancer type if occurs within a subset of batches.
 
 ``` r
 # a sample is 5 times more likely to be in condition 'b' if it belongs to an even batch number
-fake_disease_type <- purrr::map_chr(as.numeric(sim$Group), 
+fake_disease_type <- purrr::map_chr(as.numeric(factor(sim$Batch)), 
                                     ~ sample(c('a','b'), size = 1, prob = c(1, 5*(.x %% 2)))) 
 
 groups <- tibble(
-  sample=paste('sample', 1:100, sep="_"),
-  batch = sim$Group,
+  sample=paste('sample', 1:nsamples, sep="_"),
+  batch = sim$Batch,
   disease_type=fake_disease_type
 )
 
@@ -931,9 +932,9 @@ conf$overall
 ```
 
     ##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
-    ##    0.064011380   -0.008282945    0.047069894    0.084717669    0.115220484 
+    ##     0.06090652    -0.01140231     0.04442535     0.08116699     0.11331445 
     ## AccuracyPValue  McnemarPValue 
-    ##    0.999998351            NaN
+    ##     0.99999930            NaN
 
 After controlling for sampling site and other unwanted batch effects,
 the machine learning model achieved an accuracy of 0.064 which is not
@@ -941,7 +942,9 @@ significantly more than a null model.
 
 Our approach to normalisation has been quite strict, so this analysis
 does not rule out an association between microbial reads and cancer
-types in this data set.
+types in this data set. In fact, due to the correlation between unwanted
+batch effects and cancer type it is challenging to identify robust
+microbial signatures associated with cancer in the TCGA data set.
 
 However, it does indicate that by using appropriate normalisation
 techniques we are able to account for problems with contamination and
