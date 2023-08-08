@@ -534,9 +534,9 @@ legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2
 <img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
 
 Once body site-specific microbial signatures are accounted for, the
-distinction between cancer types diminishes. Furthermore, if we factor
-in the hospital from which samples were collected—a potential source of
-contamination—no obvious signal remains.
+distinction between cancer types diminishes slightly. However, if we
+factor in the hospital from which samples were collected—a potential
+source of contamination—no obvious signal remains.
 
 ``` r
 y <- removeBatchEffect(y, batch = scrub_meta$tissue_source_site_label)
