@@ -937,8 +937,8 @@ conf$overall
     ##     0.99999930            NaN
 
 After controlling for sampling site and other unwanted batch effects,
-the machine learning model achieved an accuracy of 0.064 which is not
-significantly more than a null model.
+the machine learning model achieved an accuracy of 0.0609065 which is
+not significantly more than a null model.
 
 Our approach to normalisation has been quite strict, so this analysis
 does not rule out an association between microbial reads and cancer

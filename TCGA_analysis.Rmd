@@ -712,7 +712,7 @@ conf <- confusionMatrix(data = mlModel$pred$pred, reference = trainY, mode = "pr
 conf$overall
 ```
 
-After controlling for sampling site and other unwanted batch effects, the machine learning model achieved an accuracy of 0.064 which is not significantly more than a null model.
+After controlling for sampling site and other unwanted batch effects, the machine learning model achieved an accuracy of `r conf$overall[[1]]` which is not significantly more than a null model.
 
 Our approach to normalisation has been quite strict, so this analysis does not rule out an association between microbial reads and cancer types in this data set. In fact, due to the correlation between unwanted batch effects and cancer type it is challenging to identify robust microbial signatures associated with cancer in the TCGA data set.
 
