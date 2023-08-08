@@ -1,13 +1,11 @@
 ---
 title: "Supervised normalisation can bias microbiome analyses"
-output:
-  md_document:
-    variant: markdown_github
-  html_document: default
 author:
   - Gerry Tonkin-Hill, University of Oslo
   - Lachlan Coin, Peter Doherty Institute, University of Melbourne. 
-date: "2023-08-03"
+date: "2023-08-08"
+output:
+  html_document: default
 editor_options:
   chunk_output_type: console
 ---
@@ -46,9 +44,6 @@ However, there are many other batch effects in the TCGA data that correlate with
 
 3)  **If we can, is there still a strong signal of cancer specific microbial signatures?**
 
-In theory, with a good study design including many control samples, it should be possible to correct for batch effects including human contamination. However, when the there are confounding correlations between batch effects and the variable of interest this becomes very difficult.
-
-In particular, the use of supervised normalisation techniques when such confounding correlations are present is problematic as it can generate artificial signatures.
 
 ## 1. Supervised normalisation
 
@@ -208,13 +203,13 @@ To start, lets load the original un-filtered count data from the original public
 
 ```{r}
 # Original counts with and without normalisation from Poore et al., 2020 https://www.nature.com/articles/s41586-020-2095-1
-orignal_counts_raw <- read_csv("./Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
+orignal_counts_raw <- read_csv("./data/Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
 colnames(orignal_counts_raw)[[1]] <- "Sample"
 colnames(orignal_counts_raw) <- gsub(".*g__","",colnames(orignal_counts_raw))
 
-meta_data <- read_csv("./tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_data <- read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
 
-meta_extra <- read_csv("./Metadata-TCGA-All-18116-Samples.csv")
+meta_extra <- read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
 colnames(meta_extra)[[1]] <- "Sample"
 
 meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
@@ -225,7 +220,7 @@ meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(
 
 
 #Load the updated counts from Gihawi et al., bioRxiv 2023.  https://github.com/yge15/Cancer_Microbiome_Reanalyzed
-gihawi_counts <- map(c("TableS8_BLCA.all.csv", "TableS9_HNSC_all.csv", "TableS10_BRCA_WGS.csv"), ~ {
+gihawi_counts <- map(c("./data/TableS8_BLCA.all.csv", "./data/TableS9_HNSC_all.csv", "./data/TableS10_BRCA_WGS.csv"), ~ {
                        df <- read_csv(.x)
                       colnames(df)[[1]] <- "Sample"
                       colnames(df) <- gsub("^g_","",colnames(df))
@@ -546,8 +541,8 @@ In order to implementation of the SCRuB algorithm, I further restrict the analys
 This results in a data set of 1,809 cancer samples across 16 cancer types.
 
 ```{r}
-meta_data <- read_csv("./tcga_metadata_poore_et_al_2020_1Aug23.csv")
-meta_extra <- read_csv("./Metadata-TCGA-All-18116-Samples.csv")
+meta_data <- read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_extra <- read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
 colnames(meta_extra)[[1]] <- "Sample"
 
 meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
@@ -556,7 +551,7 @@ meta_data$portion_ffpe <- meta_extra$portion_is_ffpe[match(meta_data$sampleid, m
 meta_data$experimental_strategy <- meta_extra$experimental_strategy[match(meta_data$sampleid, meta_extra$Sample)]
 meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(meta_data$sampleid, meta_extra$Sample)]
 
-orignal_counts_raw <- read_csv("./Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
+orignal_counts_raw <- read_csv("./data/Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
 colnames(orignal_counts_raw)[[1]] <- "Sample"
 colnames(orignal_counts_raw) <- gsub(".*g__","",colnames(orignal_counts_raw))
 
@@ -716,7 +711,7 @@ conf <- confusionMatrix(data = mlModel$pred$pred, reference = trainY, mode = "pr
 conf$overall
 ```
 
-After controlling for sampling site and other unwanted batch effects, the machine learning model achieved an accuracy of 0.078 which is not significantly more than a null model.
+After controlling for sampling site and other unwanted batch effects, the machine learning model achieved an accuracy of 0.064 which is not significantly more than a null model.
 
 Our approach to normalisation has been quite strict, so this analysis does not rule out an association between microbial reads and cancer types in this data set.
 
@@ -725,6 +720,7 @@ However, it does indicate that by using appropriate normalisation techniques we 
 In the future, careful study designs that include body site specific but non-cancerous controls are necessary to accurately identify association between microbial DNA and cancer types.
 
 Ultimately, to ascertain whether microbial DNA signatures can be utilised in cancer diagnostics, large comprehensive trials encompassing both cancer-afflicted and healthy patients will be required.
+
 
 ## References
 
@@ -738,8 +734,8 @@ Gihawi A, Cooper CS, Brewer DS. Caution Regarding the Specificities of Pan-Cance
 
 Austin GI, Park H, Meydan Y, Seeram D, Sezin T, Lou YC, et al. Contamination source modeling with SCRuB improves cancer phenotype prediction from microbiome data. *Nat Biotechnol*. 2023. <doi:10.1038/s41587-023-01696-w>
 
-Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et al. Microbiome analyses of blood and tissues suggest cancer diagnostic approach. *Nature*. 2020;579: 567--574. <doi:10.1038/s41586-020-2095-1>\
-\
+Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et al. Microbiome analyses of blood and tissues suggest cancer diagnostic approach. *Nature*. 2020;579: 567--574. <doi:10.1038/s41586-020-2095-1>
+
 Wang Y, LêCao K-A. Managing batch effects in microbiome data. *Brief Bioinform*. 2020;21: 1954--1970. doi:10.1093/bib/bbz105
 
 Zappia L, Phipson B, Oshlack A. Splatter: simulation of single-cell RNA sequencing data. *Genome Biol*. 2017;18: 174. <doi:10.1186/s13059-017-1305-0>

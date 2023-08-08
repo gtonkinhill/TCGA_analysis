@@ -1,0 +1,46 @@
+---
+title: "Supervised normalisation can bias microbiome analyses"
+output:
+  md_document:
+    variant: gfm
+date: "2023-08-08"
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# Supervised normalisation can bias microbiome analyses
+
+<p align="center">
+
+**Gerry Tonkin-Hill, University of Oslo**
+
+**Lachlan Coin, Peter Doherty Institute, University of Melbourne**
+
+</p>
+
+------------------------------------------------------------------------
+
+```{r, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, fig.align="center")
+```
+
+```{r, echo = FALSE}
+analysis_rmd <- 'TCGA_analysis.Rmd'
+
+raw_rmd <- readLines(analysis_rmd)
+
+# remove yaml 
+yaml_lines <- grep("---", raw_rmd)
+
+compressed_rmd <- raw_rmd[-seq(yaml_lines[1], yaml_lines[2], by = 1)]
+writeLines(compressed_rmd, "child.Rmd")
+```
+
+```{r, child = 'child.Rmd'}
+```
+
+```{r cleanup, echo=FALSE, include=FALSE}
+if (file.exists("child.Rmd")) {
+  file.remove("child.Rmd")
+}
+```

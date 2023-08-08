@@ -1,3 +1,17 @@
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# Supervised normalisation can bias microbiome analyses
+
+<p align="center">
+
+**Gerry Tonkin-Hill, University of Oslo**
+
+**Lachlan Coin, Peter Doherty Institute, University of Melbourne**
+
+</p>
+
+------------------------------------------------------------------------
+
 Supervised Normalisation, which uses the variable of interest as an
 input for batch correction, is becoming increasingly popular in
 microbiome studies. In particular, Supervised Normalisation for
@@ -64,25 +78,15 @@ correlate with particular cancer types.
 
 **To investigate this further I wanted to consider three main points**
 
-1.  **How robust is the supervised normalisation method to confounding
+1)  **How robust is the supervised normalisation method to confounding
     batch effects?**
 
-2.  **Given the presence of confounding batch effects, can we use the
+2)  **Given the presence of confounding batch effects, can we use the
     ‘normal’ (non-cancerous) tissue control samples to account for
     unwanted batch effects in the original count data?**
 
-3.  **If we can, is there still a strong signal of cancer specific
+3)  **If we can, is there still a strong signal of cancer specific
     microbial signatures?**
-
-In theory, with a good study design including many control samples, it
-should be possible to correct for batch effects including human
-contamination. However, when the there are confounding correlations
-between batch effects and the variable of interest this becomes very
-difficult.
-
-In particular, the use of supervised normalisation techniques when such
-confounding correlations are present is problematic as it can generate
-artificial signatures.
 
 ## 1. Supervised normalisation
 
@@ -171,7 +175,7 @@ plotMDS(y, col=cols[factor(groups$disease_type)])
 legend(x = "bottomright", legend = c("false condition A","false condition B"), fill= cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ``` r
 #Plot batch
@@ -179,7 +183,7 @@ plotMDS(y, col=cols[factor(groups$batch)])
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-3-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-6-2.png" style="display: block; margin: auto;" />
 
 We can now apply the Supervised Normalisation of Microarrays method. A
 critical aspect of this approach is the incorporation of the variable of
@@ -209,7 +213,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
@@ -217,7 +221,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-5-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-2.png" style="display: block; margin: auto;" />
 
 It’s handled the batch correction well and has not added any obvious
 artificial signal. However, things change when we add some correlation
@@ -254,7 +258,7 @@ plotMDS(y, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(y, col=cols[factor(groups$batch)],
@@ -262,7 +266,7 @@ plotMDS(y, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-7-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-10-2.png" style="display: block; margin: auto;" />
 
 However, after normalisation, the data no longer clusters by batch.
 Instead, we see an unexpected clustering based on our simulated disease
@@ -281,7 +285,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
@@ -289,7 +293,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-8-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-2.png" style="display: block; margin: auto;" />
 
 If we feed this imprinted data into a machine learning classifier, it
 will artificially increase its accuracy and incorrectly identify a
@@ -327,13 +331,13 @@ al. in their recent preprint.
 
 ``` r
 # Original counts with and without normalisation from Poore et al., 2020 https://www.nature.com/articles/s41586-020-2095-1
-orignal_counts_raw <- read_csv("./Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
+orignal_counts_raw <- read_csv("./data/Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
 colnames(orignal_counts_raw)[[1]] <- "Sample"
 colnames(orignal_counts_raw) <- gsub(".*g__","",colnames(orignal_counts_raw))
 
-meta_data <- read_csv("./tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_data <- read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
 
-meta_extra <- read_csv("./Metadata-TCGA-All-18116-Samples.csv")
+meta_extra <- read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
 colnames(meta_extra)[[1]] <- "Sample"
 
 meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
@@ -344,7 +348,7 @@ meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(
 
 
 #Load the updated counts from Gihawi et al., bioRxiv 2023.  https://github.com/yge15/Cancer_Microbiome_Reanalyzed
-gihawi_counts <- map(c("TableS8_BLCA.all.csv", "TableS9_HNSC_all.csv", "TableS10_BRCA_WGS.csv"), ~ {
+gihawi_counts <- map(c("./data/TableS8_BLCA.all.csv", "./data/TableS9_HNSC_all.csv", "./data/TableS10_BRCA_WGS.csv"), ~ {
                        df <- read_csv(.x)
                       colnames(df)[[1]] <- "Sample"
                       colnames(df) <- gsub("^g_","",colnames(df))
@@ -374,7 +378,7 @@ ggVennDiagram::ggVennDiagram(list(Gihawi=colnames(gihawi_counts)[-1],
   scale_fill_distiller(palette = 1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
 
 ### 2.1 Analysis of Gihawi et al. filtered counts
 
@@ -415,7 +419,7 @@ plotMDS(y, col=cols[factor(filt_meta$disease_type)],
 legend(x = "bottomright", legend = unique(filt_meta$disease_type), fill=rev(cols[1:3]), ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
 
 However, while the sequencing center is the same, other potential batch
 effects could be driving the signal including the hospital the samples
@@ -431,7 +435,7 @@ ggplot(filt_meta, aes(x=disease_type, y=tissue_source_site_label)) +
   xlab("") + ylab("")
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
 
 One option to account for these sources of unwanted variation is to use
 the associated non-cancer normal tissue samples as controls. We can use
@@ -486,7 +490,7 @@ ggplot(pdf, aes(x=`cancer type`, y=`number of reads`, colour=`cancer type`)) +
   xlab("")
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
 
 The number of microbial reads vary substantially by cancer type. While
 it might be possible to account for some of this by normalising for
@@ -532,7 +536,7 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
 
 Once body site-specific microbial signatures are accounted for, the
 distinction between cancer types diminishes. Furthermore, if we factor
@@ -547,7 +551,7 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
 
 Due to the correlation between hospital and cancer type, if we use
 Supervised Normalisation to account for hospital variation we
@@ -571,7 +575,7 @@ plotMDS(normalised$norm.dat, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
 
 So far, we have shown that Supervised Normalisation can artificially
 imprint a data set with a signal if there is a correlation between the
@@ -686,7 +690,7 @@ ggplot(pdf, aes(x=sample, y=value, colour=name)) +
   ylab("Total read count (log scale)")
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-21-1.png" style="display: block; margin: auto;" />
 
 After filtering out signals present in the tissue normal samples, some
 samples have very low read depths making them unsuitable for further
@@ -706,7 +710,7 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-22-1.png" style="display: block; margin: auto;" />
 
 There is no longer any clustering by cancer type, but there does appear
 to be some clustering driven by a remaining batch effect. Accounting for
@@ -720,7 +724,7 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-20-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-23-1.png" style="display: block; margin: auto;" />
 
 While it is always better to start with cleaner data, this analysis
 demonstrates that a careful use of normalisation and batch correction
@@ -749,8 +753,8 @@ This results in a data set of 1,809 cancer samples across 16 cancer
 types.
 
 ``` r
-meta_data <- read_csv("./tcga_metadata_poore_et_al_2020_1Aug23.csv")
-meta_extra <- read_csv("./Metadata-TCGA-All-18116-Samples.csv")
+meta_data <- read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_extra <- read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
 colnames(meta_extra)[[1]] <- "Sample"
 
 meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
@@ -759,7 +763,7 @@ meta_data$portion_ffpe <- meta_extra$portion_is_ffpe[match(meta_data$sampleid, m
 meta_data$experimental_strategy <- meta_extra$experimental_strategy[match(meta_data$sampleid, meta_extra$Sample)]
 meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(meta_data$sampleid, meta_extra$Sample)]
 
-orignal_counts_raw <- read_csv("./Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
+orignal_counts_raw <- read_csv("./data/Kraken-TCGA-Raw-Data-All-18116-Samples.csv")
 colnames(orignal_counts_raw)[[1]] <- "Sample"
 colnames(orignal_counts_raw) <- gsub(".*g__","",colnames(orignal_counts_raw))
 
@@ -846,7 +850,7 @@ ggplot(pdf, aes(x=PC1, y=PC2, col=disease_type, shape=disease_type)) +
   labs(shape="Cancer type")
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-22-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-25-1.png" style="display: block; margin: auto;" />
 
 There appears to be a clustering along the first principal component.
 However, this was not correlated with cancer type or any of the other
@@ -869,7 +873,7 @@ ggplot(pdf, aes(x=`TSNE dim 1`, y=`TSNE dim 2`, col=disease_type, shape=disease_
   labs(shape="Cancer type")
 ```
 
-<img src="TCGA_analysis_files/figure-markdown_github/unnamed-chunk-23-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-26-1.png" style="display: block; margin: auto;" />
 
 Again, although there appears to be some clustering it does not
 correlate strongly with cancer type.
@@ -938,7 +942,7 @@ conf$overall
     ##    0.999998351            NaN
 
 After controlling for sampling site and other unwanted batch effects,
-the machine learning model achieved an accuracy of 0.078 which is not
+the machine learning model achieved an accuracy of 0.064 which is not
 significantly more than a null model.
 
 Our approach to normalisation has been quite strict, so this analysis
@@ -983,8 +987,8 @@ prediction from microbiome data. *Nat Biotechnol*. 2023.
 
 Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et
 al. Microbiome analyses of blood and tissues suggest cancer diagnostic
-approach. *Nature*. 2020;579: 567–574. <doi:10.1038/s41586-020-2095-1>  
-  
+approach. *Nature*. 2020;579: 567–574. <doi:10.1038/s41586-020-2095-1>
+
 Wang Y, LêCao K-A. Managing batch effects in microbiome data. *Brief
 Bioinform*. 2020;21: 1954–1970. <doi:10.1093/bib/bbz105>
 
