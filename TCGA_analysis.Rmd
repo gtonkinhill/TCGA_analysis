@@ -1,57 +1,42 @@
 ---
 title: "Supervised normalisation can bias microbiome analyses"
 output:
+  md_document:
+    variant: markdown_github
   html_document: default
+author:
+  - Gerry Tonkin-Hill, University of Oslo
+  - Lachlan Coin, Peter Doherty Institute, University of Melbourne. 
 date: "2023-08-03"
 editor_options:
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, fig.align="center")
 ```
 
-A [preprint](https://www.biorxiv.org/content/10.1101/2023.07.28.550993v1) was recently posted to bioRxiv challenging the methods and conclusions of this [paper](https://www.nature.com/articles/s41586-020-2095-1) in Nature.
+Supervised Normalisation, which uses the variable of interest as an input for batch correction, is becoming increasingly popular in microbiome studies. In particular, Supervised Normalisation for Microarrays (SNM)---a method initially designed for microarray data analysis---has been used to account for batch effects in microbiome count data, including in several [high-profile papers](https://scholar.google.com/scholar?start=0&q=microbiome&hl=en&as_sdt=2005&sciodt=0,5&cites=3498151677715806398&scipsc=1).
 
-This followed on from a recent [preprint](https://www.biorxiv.org/content/10.1101/2023.01.16.523562v1.full.pdf) and [rebuttal](https://www.biorxiv.org/content/10.1101/2023.02.10.528049v1.full.pdf) from the same authors published earlier this year.
+A challenge in using these methods for microbiome data analysis is their reliance on careful study designs to separate the variable of interest from undesired batch effects. While such designs are prevalent in gene expression studies, they're infrequent in microbiome studies, where samples are typically collected out of convenience.
 
-Since the most recent preprint, a further [rebuttal](https://github.com/gregpoore/tcga_rebuttal) has now been posted on GitHub.
+A nice review of the challenges and methods for accounting for batch effects in microbiome data is given in [Wang and LêCao, 2019](https://doi.org/10.1093/bib/bbz105).
 
-Before I get into discussing the issue of normalisation in microbiome studies, I would like to start by thanking the authors of both the original study and the countering preprints for their transparency in making the data and the associated analytical code publicly accessible. This open approach to science is critical to accurately assessing the arguments from both perspectives.
+To investigate how suitable the SNM approach is to imperfect study designs, I have simulated artificial microbiome data and re-analysed microbiome count data from multiple publications that investigated microbial signatures associated with cancer using The Cancer Genome Atlas (TCGA) data set which considers 33 types of cancer.
+
+If you are interested in the discussion around this data set, the original publication in Nature is [here](https://www.nature.com/articles/s41586-020-2095-1). Several preprints on bioRxiv have highlighted possible concerns with the analysis, accompanied by rebuttals from the original paper's authors. These can be accessed at the following links: [preprint 1](https://www.biorxiv.org/content/10.1101/2023.01.16.523562v1.full.pdf), [rebuttal 1](https://www.biorxiv.org/content/10.1101/2023.02.10.528049v1.full.pdf), [preprint 2](https://www.biorxiv.org/content/10.1101/2023.07.28.550993v1), [rebuttal 2](https://github.com/gregpoore/tcga_rebuttal).
+
+I would like to thank both the authors of the original paper and the preprints for their commitment to open science in making the data and the associated analytical code publicly accessible.
 
 This blog post does not attempt to consider all the points made in both the original paper or the countering preprints and rebuttals. Instead, I focus on the issue of controlling for unwanted batch effects and the importance of study design.
 
 ### Summary
 
-The original paper searched for microbial DNA and RNA in whole-genome and whole-transcriptome sequencing studies from The Cancer Genome Atlas (TCGA) data set which includes 33 types of cancer. The study claimed to identify
-
-***"unique microbial signatures in tissue and blood within and between most major types of cancer"***
-
-A criticism outlined in the second pre-print by Gihawi, was that:
-
-***"errors in the genome database and the associated computational methods led to millions of false positive findings of bacterial reads across all samples, largely because most of the sequences identified as bacteria were instead human"***
-
-The authors of the preprint also noted that:
-
-***"errors in transformation of the raw data created an artificial signature, even for microbes with no reads detected, tagging each tumor type with a distinct signal that the machine learning programs then used to create an apparently accurate classifier"***
-
 While the TCGA study was primarily designed to focus on human genomics and transcriptomics, its design makes it challenging to discern reliable microbial signatures. This is due to the confounding correlations between unintended batch effects---like hospital, sequencing center, and body site---and the primary variable of interest: cancer.
 
 It has been suggested that the contamination identified in the pre-print does not necessarily invalidate the findings as it does not matter if the reads were assigned perfectly as long as a signature was still present. Indeed, I would be surprised if cancer associated human reads were responsible for all the strong signals observed in the original paper.
 
-However, there are many other batch effects in the TCGA data that correlate with particular cancer types. As the authors of the original paper state:
-
-***"The possibility of sample contamination during collection, processing, and sequencing limits these investigations, as procedural controls have rarely been implemented in cancer genomics projects."***
-
-To address these concerns, the authors of the Nature paper invested significant effort and employed multiple strategies to mitigate unwanted batch effects.
-
-In theory, with a good study design including many control samples, it should be possible to correct for batch effects including human contamination. However, when the there are confounding correlations between batch effects and the variable of interest this becomes very difficult.
-
-In particular, the use of supervised normalisation techniques when such confounding correlations are present is problematic as it can generate artificial signatures.
-
-In a [response](https://github.com/gregpoore/tcga_rebuttal) to the Gihawi et al. pre-print, Poore et al. identified a cancer-specific microbial signature in a subset of the TCGA data, which included three cancer types sequenced at Harvard Medical School. To tackle the issue of normalisation, they utilised the cleaned counts from Gihawi et al., without implementing any normalisation procedures.
-
-While all samples were processed at HMS, they originated from different hospitals and included cancers from different body sites. Thus, it is not clear if the identified signal was due to the cancer type or remaining batch effects.
+However, there are many other batch effects in the TCGA data that correlate with particular cancer types.
 
 **To investigate this further I wanted to consider three main points**
 
@@ -60,6 +45,10 @@ While all samples were processed at HMS, they originated from different hospital
 2)  **Given the presence of confounding batch effects, can we use the 'normal' (non-cancerous) tissue control samples to account for unwanted batch effects in the original count data?**
 
 3)  **If we can, is there still a strong signal of cancer specific microbial signatures?**
+
+In theory, with a good study design including many control samples, it should be possible to correct for batch effects including human contamination. However, when the there are confounding correlations between batch effects and the variable of interest this becomes very difficult.
+
+In particular, the use of supervised normalisation techniques when such confounding correlations are present is problematic as it can generate artificial signatures.
 
 ## 1. Supervised normalisation
 
@@ -203,7 +192,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-If we feed this imprinted data into a machine learning classifier, it will artificially increase it's accuracy and incorrectly identify a signal associated with the fake variable of interest.
+If we feed this imprinted data into a machine learning classifier, it will artificially increase its accuracy and incorrectly identify a signal associated with the fake variable of interest.
 
 ## 2: Accounting for unwanted variation in the TCGA data
 
@@ -213,7 +202,7 @@ Although, the contamination with human reads has received a lot of attention, it
 
 To investigate this further, I was interested in whether the observed cancer correlations remained after we accounted for microbial variation observed in the corresponding tissue normal samples for each site.
 
-These 'normal' samples are not an ideal control. If cancer associated bacteria are also present in the normal tissue this would remove such a signal. Ideally, we would have a corresponding set of body site specific normal tissue from patients without cancer. However, by using the normal tissue samples from the TCGA dataset we should be able to account for many batch effects including whether the observed correlations could simply be driven by site specific bacteria.
+These 'normal' samples are not an ideal control. **If cancer associated bacteria are also present in the normal tissue this would remove such a signal.** Ideally, we would have a corresponding set of body site specific normal tissue from patients without cancer. However, by using the normal tissue samples from the TCGA dataset we should be able to account for many batch effects including whether the observed correlations could simply be driven by site specific bacteria.
 
 To start, lets load the original un-filtered count data from the original publication and the cleaned count data produced by Gihawi et al. in their recent preprint.
 
@@ -267,7 +256,9 @@ ggVennDiagram::ggVennDiagram(list(Gihawi=colnames(gihawi_counts)[-1],
 
 ### 2.1 Analysis of Gihawi et al. filtered counts
 
-In a rebuttal to the preprint of Gihawi, it was argued that using the updated counts of Gihawi et al., without normalisation still resulted in clustering by cancer type in samples sequenced at Harvard Medical School.
+In a [response](https://github.com/gregpoore/tcga_rebuttal) to the Gihawi et al. pre-print, Poore et al. identified a cancer-specific microbial signature in a subset of the TCGA data, which included three cancer types sequenced at Harvard Medical School. To tackle the issue of normalisation, they utilised the cleaned counts from Gihawi et al., without implementing any normalisation procedures.
+
+While all samples were processed at HMS, they originated from different hospitals and included cancers from different body sites. Thus, it is not clear if the identified signal was due to the cancer type or remaining batch effects.
 
 Indeed, if we create an MDS plot of this data we observe quite clear clusters.
 
@@ -293,7 +284,16 @@ plotMDS(y, col=cols[factor(filt_meta$disease_type)],
 legend(x = "bottomright", legend = unique(filt_meta$disease_type), fill=rev(cols[1:3]), ncol=1)
 ```
 
-However, while the sequencing center is the same, other potential batch effects could be driving the signal including the hospital the samples originated from and the body site the cancer was located in.
+However, while the sequencing center is the same, other potential batch effects could be driving the signal including the hospital the samples originated from and the body site the cancer was located in. We can plot the distribution of cancer types by hospital.
+
+```{r}
+ggplot(filt_meta, aes(x=disease_type, y=tissue_source_site_label)) +
+  geom_bin2d() +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  scale_fill_binned() +
+  xlab("") + ylab("")
+```
 
 One option to account for these sources of unwanted variation is to use the associated non-cancer normal tissue samples as controls. We can use the excellent [SCRuB](https://www.nature.com/articles/s41587-023-01696-w) decontamination method to do this.
 
@@ -342,7 +342,7 @@ ggplot(pdf, aes(x=`cancer type`, y=`number of reads`, colour=`cancer type`)) +
   xlab("")
 ```
 
-There are some very different library sizes depending on the cancer type. While it might be possible to account for some of this by normalising for library size, it is unlikely to account for the increased number of potential species that could be observed at much higher read depths.
+The number of microbial reads vary substantially by cancer type. While it might be possible to account for some of this by normalising for total read counts, it is unlikely to account for the increased number of potential species that could be observed at much higher read depths.
 
 Instead, we restrict out analysis to samples with similar read counts of between 500 and 50,000 reads.
 
@@ -738,7 +738,9 @@ Gihawi A, Cooper CS, Brewer DS. Caution Regarding the Specificities of Pan-Cance
 
 Austin GI, Park H, Meydan Y, Seeram D, Sezin T, Lou YC, et al. Contamination source modeling with SCRuB improves cancer phenotype prediction from microbiome data. *Nat Biotechnol*. 2023. <doi:10.1038/s41587-023-01696-w>
 
-Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et al. Microbiome analyses of blood and tissues suggest cancer diagnostic approach. *Nature*. 2020;579: 567--574. <doi:10.1038/s41586-020-2095-1>
+Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et al. Microbiome analyses of blood and tissues suggest cancer diagnostic approach. *Nature*. 2020;579: 567--574. <doi:10.1038/s41586-020-2095-1>\
+\
+Wang Y, LêCao K-A. Managing batch effects in microbiome data. *Brief Bioinform*. 2020;21: 1954--1970. doi:10.1093/bib/bbz105
 
 Zappia L, Phipson B, Oshlack A. Splatter: simulation of single-cell RNA sequencing data. *Genome Biol*. 2017;18: 174. <doi:10.1186/s13059-017-1305-0>
 
