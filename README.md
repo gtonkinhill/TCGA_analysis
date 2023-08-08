@@ -2,10 +2,11 @@
 
 # Supervised normalisation can bias microbiome analyses
 
-Gerry Tonkin-Hill<sup>1</sup> & Lachlan Coin<sup>2</sup>
+**Gerry Tonkin-Hill<sup>1</sup> & Lachlan Coin<sup>2</sup>**
 
-<sup>1</sup>University of Oslo <sup>2</sup>Peter Doherty Institute,
-University of Melbourne
+<sup>1</sup>University of Oslo
+
+<sup>2</sup>Peter Doherty Institute, University of Melbourne
 
 ------------------------------------------------------------------------
 
