@@ -721,6 +721,9 @@ In the future, careful study designs that include body site specific but non-can
 
 Ultimately, to ascertain whether microbial DNA signatures can be utilised in cancer diagnostics, large comprehensive trials encompassing both cancer-afflicted and healthy patients will be required.
 
+## Acknowledgements
+
+Thanks to Prof. Lachlan Coin for helpful advice and comments.
 
 ## References
 

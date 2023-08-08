@@ -2,11 +2,7 @@
 
 # Supervised normalisation can bias microbiome analyses
 
-**Gerry Tonkin-Hill<sup>1</sup> & Lachlan Coin<sup>2</sup>**
-
-<sup>1</sup>University of Oslo
-
-<sup>2</sup>Peter Doherty Institute, University of Melbourne
+**Gerry Tonkin-Hill, University of Oslo**
 
 ------------------------------------------------------------------------
 
@@ -958,6 +954,10 @@ between microbial DNA and cancer types.
 Ultimately, to ascertain whether microbial DNA signatures can be
 utilised in cancer diagnostics, large comprehensive trials encompassing
 both cancer-afflicted and healthy patients will be required.
+
+## Acknowledgements
+
+Thanks to Prof. Lachlan Coin for helpful advice and comments.
 
 ## References
 
