@@ -131,13 +131,13 @@ cols <- c('#e41a1c','#377eb8','#4daf4a','#984ea3')
 
 Let’s start by generating simulated microbiome compositions using the
 `splatter` bioconductor package. `Splatter` was originally designed to
-simulate single cell data which happens to have a similar distribution
-to microbiome studies.
+simulate single cell data which is usually zero-inflated and
+over-dispersed much like microbiome data.
 
 We’ll consider 100 samples with up to 500 species in each sample. Each
 simulation is independent so there are no underlying groups or clusters
 of interest present. We add a simulated batch effect of 4 groups split
-roughly evenly over the 100 samples.
+roughly evenly over the 200 samples.
 
 ``` r
 batches <- c(50, 50, 50, 50)
@@ -730,7 +730,7 @@ subset of samples from Harvard, even when using the original un-filtered
 count data, we can now investigate the signals present in the larger
 dataset originally published by Poore et al.
 
-## 3. Re-analysis of Poore et al., across hospital sites and cancer types
+## 3. Re-analysis of Poore et al. data across hospital sites and cancer types
 
 To start, I load the full unfiltered TCGA data from the Poore et al.,
 manuscript.
