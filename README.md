@@ -15,8 +15,8 @@ I’d like to start by thanking Dr Sepich-Poore for highlighting these
 issues and providing constructive feedback. I also wish to emphasize
 that the analysis in my blog doesn’t definitively determine the presence
 or absence of a cancer-specific microbial signature in the TCGA data;
-rather, it emphasises the importance of the chosen normalisation
-strategy.
+rather, it emphasises the importance of normalisation in microbiome
+studies.
 
 The first important point raised by Dr Sepich-Poore, is that the use of
 Supervised Normalisation in the original TCGA paper did **not** include
