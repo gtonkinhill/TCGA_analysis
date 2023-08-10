@@ -6,6 +6,126 @@
 
 ------------------------------------------------------------------------
 
+### Update 10/08/2023
+
+Dr Sepich-Poore has raised some important points in an issue posted to
+GitHub [here](https://github.com/gtonkinhill/TCGA_analysis/issues/2).
+
+I’d like to start by thanking Dr Sepich-Poore for highlighting these
+issues and providing constructive feedback. I also wish to emphasize
+that the analysis in my blog doesn’t definitively determine the presence
+or absence of a cancer-specific microbial signature in the TCGA data;
+rather, it emphasises the importance of the chosen normalisation
+strategy.
+
+The first important point raised by Dr Sepich-Poore, is that the use of
+Supervised Normalisation in the original TCGA paper did **not** include
+cancer type as the biological variable of interest.
+
+Rather, **sample type** (Primary Tumor, Blood Derived Normal, Solid
+Tissue Normal etc) was used as the biological variable. The use of this
+variable is less likely to bias the results towards cancer type specific
+signatures.
+
+However, although there are fewer variables in the *sample type*
+category, it still correlates strongly with a number of the unwanted
+variables. We can get a rough idea of this correlation using logistic
+regression.
+
+``` r
+library(tidyverse)
+
+meta_data <- readr::read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_extra <- readr::read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
+colnames(meta_extra)[[1]] <- "Sample"
+meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$platform <- meta_extra$platform[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$portion_ffpe <- meta_extra$portion_is_ffpe[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$experimental_strategy <- meta_extra$experimental_strategy[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(meta_data$sampleid, meta_extra$Sample)]
+
+variable_correlation <- purrr::map_dfr(unique(meta_data$sample_type), ~{
+  m <- glm(sample_type==.x ~ data_submitting_center_label+
+                               platform +
+                               experimental_strategy +
+                               tissue_source_site_label +
+                               portion_ffpe, data = meta_data, family = "binomial")
+  
+  if (!m$converged) return(NULL)
+  
+  return(broom::tidy(m) %>%
+    add_column(sample_type=.x, .before=1) %>%
+    filter(term!="(Intercept)"))
+})
+
+variable_correlation$term <- gsub("tissue_source_site_label", "source_site:", variable_correlation$term)
+variable_correlation$term <- gsub("data_submitting_center_label", "center_label:", variable_correlation$term)
+variable_correlation %>% filter(p.value < 1e-6)
+```
+
+    ## # A tibble: 17 × 6
+    ##    sample_type         term                estimate std.error statistic  p.value
+    ##    <chr>               <chr>                  <dbl>     <dbl>     <dbl>    <dbl>
+    ##  1 Primary Tumor       experimental_strat…   -2.64      0.234    -11.3  1.81e-29
+    ##  2 Primary Tumor       source_site:Cedars…    1.50      0.297      5.05 4.42e- 7
+    ##  3 Primary Tumor       source_site:Duke       1.33      0.263      5.05 4.36e- 7
+    ##  4 Primary Tumor       source_site:Essen     -4.49      0.751     -5.97 2.38e- 9
+    ##  5 Primary Tumor       source_site:ILSbio     1.44      0.262      5.49 4.07e- 8
+    ##  6 Primary Tumor       source_site:Indivu…    1.10      0.222      4.95 7.57e- 7
+    ##  7 Primary Tumor       source_site:Memori…    1.38      0.236      5.83 5.40e- 9
+    ##  8 Primary Tumor       source_site:MSKCC      1.32      0.240      5.50 3.87e- 8
+    ##  9 Primary Tumor       source_site:Roswell   -2.73      0.544     -5.02 5.17e- 7
+    ## 10 Solid Tissue Normal center_label:Harva…   -0.722     0.139     -5.19 2.12e- 7
+    ## 11 Solid Tissue Normal source_site:Henry …   -2.85      0.500     -5.69 1.24e- 8
+    ## 12 Solid Tissue Normal source_site:Memori…   -5.38      1.02      -5.26 1.47e- 7
+    ## 13 Solid Tissue Normal source_site:MSKCC     -1.46      0.253     -5.75 8.71e- 9
+    ## 14 Metastatic          source_site:Essen      4.73      0.568      8.33 8.03e-17
+    ## 15 Metastatic          source_site:Roswell    4.26      0.634      6.73 1.75e-11
+    ## 16 Metastatic          source_site:Univer…    5.02      0.548      9.15 5.71e-20
+    ## 17 Metastatic          source_site:Yale       4.79      0.603      7.95 1.85e-15
+
+Consequently, while not conclusively demonstrated here, it’s possible
+that the SNM algorithm might exaggerate differences between cancer and
+normal samples. This, combined with a body site-specific microbiota,
+could result in a cancer-specific signal.
+
+A second concern raised was the potential that using normal-tissue
+samples as controls could obscure genuine signals, especially if
+cancer-specific bacteria are present in both cancer and normal tissue
+types, as indicated in [Nejman et al.,
+2020](https://www.science.org/doi/10.1126/science.aay9189).
+
+This is something we agree on, and a limitation of the TCGA study
+design. Ideally, normal tissue samples from patients without cancer
+would be used for normalisation.
+
+Lastly, Dr Sepich-Poore observed that while accounting for hospital
+seemed to have a significant impact on the normalisation of read counts
+produced by Gihawi et al., samples from each hospital still appeared to
+cluster by cancer type. This is a really interesting point.
+
+My initial guess, is this depends on how well body site effects have
+been controlled for, which, as I’ve noted, is challenging to do. When I
+applied the SCRuB algorithm to the original unfiltered counts to remove
+body site-specific effects, the samples no longer clustered by cancer
+type. This was prior to removing hospital associated effects.
+
+Conversely, SCRuB had less of an impact on the filtered read counts from
+the Gihawi et al. This could be attributed to fewer non-zero counts in
+this dataset, potentially diminishing the power of the SCRuB algorithm.
+Or, it might indicate a cancer-specific microbial signature that wasn’t
+prominent enough to be discerned after accounting for the hospital site
+using the `removeBatchEffect` function.
+
+The primary aim of this blog post was to emphasise the subtleties and
+significance of selecting the right normalisation method. In the future,
+I believe that emerging datasets and research will further clarify our
+understanding of the microbes linked to cancer.
+
+------------------------------------------------------------------------
+
+### Main text
+
 Supervised Normalisation, which uses the variable of interest as an
 input for batch correction, is becoming increasingly popular in
 microbiome studies. In particular, Supervised Normalisation for
@@ -170,7 +290,7 @@ plotMDS(y, col=cols[factor(groups$disease_type)], labels = NULL)
 legend(x = "bottomright", legend = c("false condition A","false condition B"), fill= cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 ``` r
 #Plot batch
@@ -178,7 +298,7 @@ plotMDS(y, col=cols[factor(groups$batch)])
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-6-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-7-2.png" style="display: block; margin: auto;" />
 
 We can now apply the Supervised Normalisation of Microarrays method. A
 critical aspect of this approach is the incorporation of the variable of
@@ -208,7 +328,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
@@ -216,7 +336,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-9-2.png" style="display: block; margin: auto;" />
 
 It’s handled the batch correction well and has not added any obvious
 artificial signal. However, things change when we add some correlation
@@ -253,7 +373,7 @@ plotMDS(y, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(y, col=cols[factor(groups$batch)],
@@ -261,7 +381,7 @@ plotMDS(y, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-10-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-2.png" style="display: block; margin: auto;" />
 
 However, after normalisation, the data no longer clusters by batch.
 Instead, we see an unexpected clustering based on our simulated disease
@@ -280,7 +400,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$disease_type)],
 legend(x = "bottomright", legend = c("fake condition A","fake condition B"), fill= cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 
 ``` r
 plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
@@ -288,7 +408,7 @@ plotMDS(normalised$norm.dat, col=cols[factor(groups$batch)],
 legend(x = "bottomright", legend = paste("batch", 1:4), fill=cols, ncol=2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-11-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-12-2.png" style="display: block; margin: auto;" />
 
 If we feed this imprinted data into a machine learning classifier, it
 will artificially increase its accuracy and incorrectly identify a
@@ -373,7 +493,7 @@ ggVennDiagram::ggVennDiagram(list(Gihawi=colnames(gihawi_counts)[-1],
   scale_fill_distiller(palette = 1)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
 
 ### 2.1 Analysis of Gihawi et al. filtered counts
 
@@ -414,7 +534,7 @@ plotMDS(y, col=cols[factor(filt_meta$disease_type)],
 legend(x = "bottomright", legend = unique(filt_meta$disease_type), fill=rev(cols[1:3]), ncol=1)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
 
 However, while the sequencing center is the same, other potential batch
 effects could be driving the signal including the hospital the samples
@@ -430,7 +550,7 @@ ggplot(filt_meta, aes(x=disease_type, y=tissue_source_site_label)) +
   xlab("") + ylab("")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
 
 One option to account for these sources of unwanted variation is to use
 the associated non-cancer normal tissue samples as controls. We can use
@@ -485,7 +605,7 @@ ggplot(pdf, aes(x=`cancer type`, y=`number of reads`, colour=`cancer type`)) +
   xlab("")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
 
 The number of microbial reads vary substantially by cancer type. While
 it might be possible to account for some of this by normalising for
@@ -531,7 +651,7 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
 
 Once body site-specific microbial signatures are accounted for, the
 distinction between cancer types diminishes slightly. However, if we
@@ -542,30 +662,6 @@ source of contamination—no obvious signal remains.
 y <- removeBatchEffect(y, batch = scrub_meta$tissue_source_site_label)
 
 plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
-        var.explained = FALSE)
-legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
-```
-
-<img src="README_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
-
-Due to the correlation between hospital and cancer type, if we use
-Supervised Normalisation to account for hospital variation we
-**artificially** increase the separation between the two cancer types.
-
-``` r
-y <- removeBatchEffect(y, batch = scrub_meta$tissue_source_site_label)
-
-disease_matrix <- model.matrix(~investigation, data=scrub_meta)
-batch_matrix <- model.matrix(~tissue_source_site_label, data=scrub_meta)
-
-normalised <- snm(raw.dat = y, 
-                  bio.var = disease_matrix, 
-                  adj.var = batch_matrix, 
-                  rm.adj=TRUE,
-                  verbose = TRUE,
-                  diagnose = TRUE)
-
-plotMDS(normalised$norm.dat, col=cols[-2][factor(scrub_meta$disease_type)],
         var.explained = FALSE)
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```

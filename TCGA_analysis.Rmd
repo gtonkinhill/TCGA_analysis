@@ -14,6 +14,67 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, fig.align="center")
 ```
 
+### Update 10/08/2023
+
+Dr Sepich-Poore has raised some important points in an issue posted to GitHub [here](https://github.com/gtonkinhill/TCGA_analysis/issues/2).
+
+I'd like to start by thanking Dr Sepich-Poore for highlighting these issues and providing constructive feedback. I also wish to emphasize that the analysis in my blog doesn't definitively determine the presence or absence of a cancer-specific microbial signature in the TCGA data; rather, it emphasises the importance of the chosen normalisation strategy.
+
+The first important point raised by Dr Sepich-Poore, is that the use of Supervised Normalisation in the original TCGA paper did **not** include cancer type as the biological variable of interest.
+
+Rather, **sample type** (Primary Tumor, Blood Derived Normal, Solid Tissue Normal etc) was used as the biological variable. The use of this variable is less likely to bias the results towards cancer type specific signatures.
+
+However, although there are fewer variables in the *sample type* category, it still correlates strongly with a number of the unwanted variables. We can get a rough idea of this correlation using logistic regression.
+
+```{r}
+library(tidyverse)
+
+meta_data <- readr::read_csv("./data/tcga_metadata_poore_et_al_2020_1Aug23.csv")
+meta_extra <- readr::read_csv("./data/Metadata-TCGA-All-18116-Samples.csv")
+colnames(meta_extra)[[1]] <- "Sample"
+meta_data$gender <- meta_extra$gender[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$platform <- meta_extra$platform[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$portion_ffpe <- meta_extra$portion_is_ffpe[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$experimental_strategy <- meta_extra$experimental_strategy[match(meta_data$sampleid, meta_extra$Sample)]
+meta_data$tissue_source_site_label <- meta_extra$tissue_source_site_label[match(meta_data$sampleid, meta_extra$Sample)]
+
+variable_correlation <- purrr::map_dfr(unique(meta_data$sample_type), ~{
+  m <- glm(sample_type==.x ~ data_submitting_center_label+
+                               platform +
+                               experimental_strategy +
+                               tissue_source_site_label +
+                               portion_ffpe, data = meta_data, family = "binomial")
+  
+  if (!m$converged) return(NULL)
+  
+  return(broom::tidy(m) %>%
+    add_column(sample_type=.x, .before=1) %>%
+    filter(term!="(Intercept)"))
+})
+
+variable_correlation$term <- gsub("tissue_source_site_label", "source_site:", variable_correlation$term)
+variable_correlation$term <- gsub("data_submitting_center_label", "center_label:", variable_correlation$term)
+variable_correlation %>% filter(p.value < 1e-6)
+```
+
+Consequently, while not conclusively demonstrated here, it's possible that the SNM algorithm might exaggerate differences between cancer and normal samples. This, combined with a body site-specific microbiota, could result in a cancer-specific signal.
+
+A second concern raised was the potential that using normal-tissue samples as controls could obscure genuine signals, especially if cancer-specific bacteria are present in both cancer and normal tissue types, as indicated in [Nejman et al., 2020](https://www.science.org/doi/10.1126/science.aay9189).
+
+This is something we agree on, and a limitation of the TCGA study design. Ideally, normal tissue samples from patients without cancer would be used for normalisation.
+
+Lastly, Dr Sepich-Poore observed that while accounting for hospital seemed to have a significant impact on the normalisation of read counts produced by Gihawi et al., samples from each hospital still appeared to cluster by cancer type. This is a really interesting point. 
+
+My initial guess, is this depends on how well body site effects have been controlled for, which, as I've noted, is challenging to do. When I applied the SCRuB algorithm to the original unfiltered counts to remove body site-specific effects, the samples no longer clustered by cancer type. This was prior to removing hospital associated effects.
+
+Conversely, SCRuB had less of an impact on the filtered read counts from the Gihawi et al. This could be attributed to fewer non-zero counts in this dataset, potentially diminishing the power of the SCRuB algorithm. Or, it might indicate a cancer-specific microbial signature that wasn't prominent enough to be discerned after accounting for the hospital site using the `removeBatchEffect` function.
+
+The primary aim of this blog post was to emphasise the subtleties and significance of selecting the right normalisation method. In the future, I believe that emerging datasets and research will further clarify our understanding of the microbes linked to cancer. 
+
+------------------------------------------------------------------------
+
+### Main text
+
 Supervised Normalisation, which uses the variable of interest as an input for batch correction, is becoming increasingly popular in microbiome studies. In particular, Supervised Normalisation for Microarrays (SNM)---a method initially designed for microarray data analysis---has been used to account for batch effects in microbiome count data, including in several [high-profile papers](https://scholar.google.com/scholar?start=0&q=microbiome&hl=en&as_sdt=2005&sciodt=0,5&cites=3498151677715806398&scipsc=1).
 
 A challenge in using these methods for microbiome data analysis is their reliance on careful study designs to separate the variable of interest from undesired batch effects. While such designs are prevalent in gene expression studies, they're infrequent in microbiome studies, where samples are typically collected out of convenience.
@@ -43,7 +104,6 @@ However, there are many other batch effects in the TCGA data that correlate with
 2)  **Given the presence of confounding batch effects, can we use the 'normal' (non-cancerous) tissue control samples to account for unwanted batch effects in the original count data?**
 
 3)  **If we can, is there still a strong signal of cancer specific microbial signatures?**
-
 
 ## 1. Supervised normalisation
 
@@ -388,26 +448,6 @@ plotMDS(y, col=cols[-2][factor(scrub_meta$disease_type)],
 legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
 ```
 
-Due to the correlation between hospital and cancer type, if we use Supervised Normalisation to account for hospital variation we **artificially** increase the separation between the two cancer types.
-
-```{r}
-y <- removeBatchEffect(y, batch = scrub_meta$tissue_source_site_label)
-
-disease_matrix <- model.matrix(~investigation, data=scrub_meta)
-batch_matrix <- model.matrix(~tissue_source_site_label, data=scrub_meta)
-
-normalised <- snm(raw.dat = y, 
-                  bio.var = disease_matrix, 
-                  adj.var = batch_matrix, 
-                  rm.adj=TRUE,
-                  verbose = TRUE,
-                  diagnose = TRUE)
-
-plotMDS(normalised$norm.dat, col=cols[-2][factor(scrub_meta$disease_type)],
-        var.explained = FALSE)
-legend(x = "bottomright", legend = unique(scrub_meta$disease_type), fill=cols[-2], ncol=1)
-```
-
 So far, we have shown that Supervised Normalisation can artificially imprint a data set with a signal if there is a correlation between the variable of interest and unwanted batch effects.
 
 After employing rigorous normalisation methods to mitigate potential influences from body site and hospital batch effects, the distinction between Bladder Urothelial Carcinoma and Head and Neck Squamous Cell Carcinoma isn't evident. While this doesn't rule out unique microbial signatures in these samples, the TCGA study design complicates the task of detecting a robust signal.
@@ -740,7 +780,7 @@ Austin GI, Park H, Meydan Y, Seeram D, Sezin T, Lou YC, et al. Contamination sou
 
 Poore GD, Kopylova E, Zhu Q, Carpenter C, Fraraccio S, Wandro S, et al. Microbiome analyses of blood and tissues suggest cancer diagnostic approach. *Nature*. 2020;579: 567--574. <doi:10.1038/s41586-020-2095-1>
 
-Wang Y, LêCao K-A. Managing batch effects in microbiome data. *Brief Bioinform*. 2020;21: 1954--1970. doi:10.1093/bib/bbz105
+Wang Y, LêCao K-A. Managing batch effects in microbiome data. *Brief Bioinform*. 2020;21: 1954--1970. <doi:10.1093/bib/bbz105>
 
 Zappia L, Phipson B, Oshlack A. Splatter: simulation of single-cell RNA sequencing data. *Genome Biol*. 2017;18: 174. <doi:10.1186/s13059-017-1305-0>
 
